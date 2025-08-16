@@ -1,8 +1,8 @@
-// App.js — eKEMATIAN single-file final (CRUD, search, death payment logic, upload, export PDF/CSV, profil penganjur)
+// App.js — eKEMATIAN single-file final (CRUD, search, death payment logic, upload, export PDF/CSV, organizer profile)
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, Image, FlatList, StyleSheet, TextInput, Button,
-  TouchableOpacity, Modal, Alert, ScrollView, Linking
+  TouchableOpacity, Modal, Alert, ScrollView
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
@@ -13,21 +13,22 @@ import * as DocumentPicker from 'expo-document-picker';
 /*
 Data shape for each participant:
 {
-id: number,
-name: string,
-ic: string,
-address: string,
-will: string,
-income: number,
-expense: number,
-funeral: number,
-status: 'alive' | 'dead',
-image: string
+  id: number,
+  name: string,
+  ic: string,
+  address: string,
+  will: string,
+  income: number,
+  expense: number,
+  funeral: number,
+  status: 'alive' | 'dead',
+  image: string
 }
 */
 
 const STORAGE_KEY = 'ekematian_participants_v1';
 const MAINT_KEY = 'ekematian_maintenance_v1';
+const ORG_KEY = 'ekematian_organizer_v1';
 
 const saveData = async (key, value) => {
   try { await AsyncStorage.setItem(key, JSON.stringify(value)); }
@@ -43,6 +44,7 @@ const fmt = (n) => {
   return 'RM' + Number(n).toFixed(2);
 };
 
+// ----------------- ClaimItem -----------------
 function ClaimItem({ participant, onEdit, onDelete, onMarkDead }) {
   return (
     <View style={styles.item}>
@@ -51,26 +53,29 @@ function ClaimItem({ participant, onEdit, onDelete, onMarkDead }) {
         <Text style={styles.name}>{participant.name} {participant.status === 'dead' ? '(Meninggal)' : ''}</Text>
         <Text style={{ fontSize: 12 }}>{participant.ic}</Text>
         <Text style={{ fontSize: 12 }}>{participant.address || ''}</Text>
-        <Text style={{ fontSize: 12, color: '#333' }}>In: {fmt(participant.income)}  Out: {fmt(participant.expense)}  Funeral: {fmt(participant.funeral || 0)}</Text>
+        <Text style={{ fontSize: 12, color: '#333' }}>
+          In: {fmt(participant.income)}  Out: {fmt(participant.expense)}  Funeral: {fmt(participant.funeral || 0)}
+        </Text>
       </View>
 
-      <View style={{ alignItems: 'flex-end' }}>
-        <TouchableOpacity onPress={() => onEdit(participant)} style={styles.btnSmall}>
-          <Text style={styles.btnText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => onDelete(participant.id)} style={[styles.btnSmall, { backgroundColor: '#d9534f', marginTop: 6 }]}>
-          <Text style={styles.btnText}>Padam</Text>
-        </TouchableOpacity>
-        {participant.status !== 'dead' ? (
-          <TouchableOpacity onPress={() => onMarkDead(participant)} style={[styles.btnSmall, { backgroundColor: '#6c757d', marginTop: 6 }]}>
-            <Text style={styles.btnText}>Tandakan Meninggal</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <View style={{ alignItems: 'flex-end' }}>  
+        <TouchableOpacity onPress={() => onEdit(participant)} style={styles.btnSmall}>  
+          <Text style={styles.btnText}>Edit</Text>  
+        </TouchableOpacity>  
+        <TouchableOpacity onPress={() => onDelete(participant.id)} style={[styles.btnSmall, { backgroundColor: '#d9534f', marginTop: 6 }]}>  
+          <Text style={styles.btnText}>Padam</Text>  
+        </TouchableOpacity>  
+        {participant.status !== 'dead' ? (  
+          <TouchableOpacity onPress={() => onMarkDead(participant)} style={[styles.btnSmall, { backgroundColor: '#6c757d', marginTop: 6 }]}>  
+            <Text style={styles.btnText}>Tandakan Meninggal</Text>  
+          </TouchableOpacity>  
+        ) : null}  
+      </View>  
     </View>
   );
 }
 
+// ----------------- VolunteerItem -----------------
 function VolunteerItem({ volunteer }) {
   return (
     <View style={styles.item}>
@@ -83,6 +88,7 @@ function VolunteerItem({ volunteer }) {
   );
 }
 
+// ----------------- AddEditModal -----------------
 function AddEditModal({ visible, onClose, onSave, editData }) {
   const [name, setName] = useState('');
   const [ic, setIc] = useState('');
@@ -123,32 +129,34 @@ function AddEditModal({ visible, onClose, onSave, editData }) {
   return (
     <Modal visible={visible} animationType="slide">
       <ScrollView style={{ flex: 1, padding: 18, backgroundColor: '#fff' }}>
-        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>{editData ? 'Ubah Ahli' : 'Tambah Ahli (Yuran RM33)'}</Text>
+        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+          {editData ? 'Ubah Ahli' : 'Tambah Ahli (Yuran RM33)'}
+        </Text>
 
-        <TextInput style={styles.input} placeholder="Nama" value={name} onChangeText={setName} />
-        <TextInput style={styles.input} placeholder="No. IC" value={ic} onChangeText={setIc} />
-        <TextInput style={styles.input} placeholder="Alamat waris" value={address} onChangeText={setAddress} />
-        <TextInput style={styles.input} placeholder="Wasiat / Catatan hutang" value={will} onChangeText={setWill} />
-        <TextInput style={styles.input} placeholder="Kos jenazah (optional)" value={funeral} onChangeText={setFuneral} keyboardType="numeric" />
+        <TextInput style={styles.input} placeholder="Nama" value={name} onChangeText={setName} />  
+        <TextInput style={styles.input} placeholder="No. IC" value={ic} onChangeText={setIc} />  
+        <TextInput style={styles.input} placeholder="Alamat waris" value={address} onChangeText={setAddress} />  
+        <TextInput style={styles.input} placeholder="Wasiat / Catatan hutang" value={will} onChangeText={setWill} />  
+        <TextInput style={styles.input} placeholder="Kos jenazah (optional)" value={funeral} onChangeText={setFuneral} keyboardType="numeric" />  
 
-        <View style={{ marginTop: 12 }}>
-          <Button title={editData ? 'Simpan Perubahan' : 'Tambah Ahli (bayar RM33)'} onPress={handleSave} />
-        </View>
-        <View style={{ marginTop: 8 }}>
-          <Button title="Batal" color="#6c757d" onPress={onClose} />
-        </View>
-      </ScrollView>
+        <View style={{ marginTop: 12 }}>  
+          <Button title={editData ? 'Simpan Perubahan' : 'Tambah Ahli (bayar RM33)'} onPress={handleSave} />  
+        </View>  
+        <View style={{ marginTop: 8 }}>  
+          <Button title="Batal" color="#6c757d" onPress={onClose} />  
+        </View>  
+      </ScrollView>  
     </Modal>
   );
-}
-
+}// ----------------- App Component -----------------
 export default function App() {
   const [participants, setParticipants] = useState([]);
   const [maintenance, setMaintenance] = useState(0);
   const [search, setSearch] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [editData, setEditData] = useState(null);
-  const [organizerImage, setOrganizerImage] = useState('https://via.placeholder.com/60');
+  const [organizer, setOrganizer] = useState({ name: '', youtube: '', image: '' });
+  const [modalOrganizerVisible, setModalOrganizerVisible] = useState(false);
 
   const volunteers = [
     { id: 201, name: 'Ketua Sukarelawan - Siti', role: 'Ketua', image: 'https://via.placeholder.com/80' },
@@ -164,19 +172,23 @@ export default function App() {
     (async () => {
       const ps = await loadData(STORAGE_KEY);
       const mf = await loadData(MAINT_KEY);
+      const org = await loadData(ORG_KEY);
       setParticipants(ps && Array.isArray(ps) ? ps : dummy);
       setMaintenance(typeof mf === 'number' ? mf : 0);
+      setOrganizer(org || { name: '', youtube: '', image: '' });
     })();
   }, []);
 
   useEffect(() => { saveData(STORAGE_KEY, participants); }, [participants]);
   useEffect(() => { saveData(MAINT_KEY, maintenance); }, [maintenance]);
+  useEffect(() => { saveData(ORG_KEY, organizer); }, [organizer]);
 
   const totalParticipants = participants.length;
   const totalIncome = participants.reduce((s, p) => s + Number(p.income || 0), 0);
   const totalExpense = participants.reduce((s, p) => s + Number(p.expense || 0) + Number(p.funeral || 0), 0);
   const balance = totalIncome - totalExpense - Number(maintenance || 0);
 
+  // ----------------- Participant Handlers -----------------
   const handleSaveParticipant = async (payload) => {
     payload.income = Number(payload.income || 0);
     payload.expense = Number(payload.expense || 0);
@@ -197,28 +209,25 @@ export default function App() {
 
   const handleMarkDead = (deceased) => {
     if (deceased.status === 'dead') { Alert.alert('Nota', 'Ahli ini sudah ditandakan meninggal.'); return; }
-
-    Alert.alert('Sahkan', `Tandakan ${deceased.name} sebagai meninggal? Ini akan caj RM1 kepada setiap ahli hidup lain.`, [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Ok', onPress: () => {
-          setParticipants(prev => {
-            const aliveOthers = prev.filter(p => p.id !== deceased.id && p.status !== 'dead');
-            const payers = aliveOthers.length;
-            const updatedOthers = prev.map(p => {
-              if (p.id !== deceased.id && p.status !== 'dead') { return { ...p, expense: Number(p.expense || 0) + 1 }; }
-              return p;
-            });
-            const deceasedShare = (payers * 1) * 0.75;
-            const updated = updatedOthers.map(p => {
-              if (p.id === deceased.id) { return { ...p, income: Number(p.income || 0) + deceasedShare, status: 'dead' }; }
-              return p;
-            });
-            setMaintenance(m => Number(m || 0) + (payers * 1 * 0.25));
-            return updated;
-          });
-        }
-      }
+    Alert.alert('Sahkan', `Tandakan ${deceased.name} sebagai meninggal? Ini akan caj RM1 kepada setiap ahli hidup lain.`, [  
+      { text: 'Batal', style: 'cancel' },  
+      { text: 'Ok', onPress: () => {  
+        setParticipants(prev => {  
+          const aliveOthers = prev.filter(p => p.id !== deceased.id && p.status !== 'dead');  
+          const payers = aliveOthers.length;  
+          const updatedOthers = prev.map(p => {  
+            if (p.id !== deceased.id && p.status !== 'dead') return { ...p, expense: Number(p.expense || 0) + 1 };  
+            return p;  
+          });  
+          const deceasedShare = (payers * 1) * 0.75;  
+          const updated = updatedOthers.map(p => {  
+            if (p.id === deceased.id) return { ...p, income: Number(p.income || 0) + deceasedShare, status: 'dead' };  
+            return p;  
+          });  
+          setMaintenance(m => Number(m || 0) + (payers * 1 * 0.25));  
+          return updated;  
+        });  
+      }}  
     ]);
   };
 
@@ -230,7 +239,7 @@ export default function App() {
         setMaintenance(0);
         await saveData(STORAGE_KEY, dummy);
         await saveData(MAINT_KEY, 0);
-      } }
+      }}
     ]);
   };
 
@@ -240,25 +249,24 @@ export default function App() {
       { text: 'Padam', style: 'destructive', onPress: async () => {
         setParticipants([]); setMaintenance(0);
         await AsyncStorage.removeItem(STORAGE_KEY); await AsyncStorage.removeItem(MAINT_KEY);
-      } }
+      }}
     ]);
   };
 
+  // ----------------- Export / Import -----------------
   const handleExportPDF = async () => {
-    const html = `
-      <html>
-      <body>
-        <h1>eKEMATIAN — Laporan Audit</h1>
-        <p>Tarikh: ${new Date().toLocaleString()}</p>
-        <p>Jumlah peserta: ${totalParticipants}</p>
-        <p>Jumlah masuk: ${fmt(totalIncome)}</p>
-        <p>Jumlah keluar: ${fmt(totalExpense)}</p>
-        <p>Dana maintenance: ${fmt(maintenance)}</p>
-        <p>Baki: ${fmt(balance)}</p>
-        <h2>Senarai Peserta</h2>
-        <table border="1" cellpadding="6" cellspacing="0">
-          <thead><tr><th>Nama</th><th>IC</th><th>Status</th><th>In</th><th>Out</th><th>Funeral</th></tr></thead>
-          <tbody>
+    const html = `<html><body>
+      <h1>eKEMATIAN — Laporan Audit</h1>
+      <p>Tarikh: ${new Date().toLocaleString()}</p>
+      <p>Jumlah peserta: ${totalParticipants}</p>
+      <p>Jumlah masuk: ${fmt(totalIncome)}</p>
+      <p>Jumlah keluar: ${fmt(totalExpense)}</p>
+      <p>Dana maintenance: ${fmt(maintenance)}</p>
+      <p>Baki: ${fmt(balance)}</p>
+      <h2>Senarai Peserta</h2>
+      <table border="1" cellpadding="6" cellspacing="0">
+        <thead><tr><th>Nama</th><th>IC</th><th>Status</th><th>In</th><th>Out</th><th>Funeral</th></tr></thead>
+        <tbody>
           ${participants.map(p => `<tr>
             <td>${p.name}</td>
             <td>${p.ic || ''}</td>
@@ -267,11 +275,9 @@ export default function App() {
             <td>${Number(p.expense || 0).toFixed(2)}</td>
             <td>${Number(p.funeral || 0).toFixed(2)}</td>
           </tr>`).join('')}
-          </tbody>
-        </table>
-      </body>
-      </html>
-    `;
+        </tbody>
+      </table>
+    </body></html>`;
     try {
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri, { mimeType: 'application/pdf' });
@@ -324,39 +330,103 @@ export default function App() {
     }
   };
 
-  const handleUploadOrganizerImage = async () => {
-    try {
-      const res = await DocumentPicker.getDocumentAsync({ type: 'image/*' });
-      if (res.type === 'success') {
-        setOrganizerImage(res.uri);
-      }
-    } catch (e) {
-      console.error(e);
-      Alert.alert('Ralat', 'Gagal upload gambar: ' + String(e));
-    }
-  };
+  // ----------------- Organizer Handlers -----------------
+  const handleSaveOrganizer = (payload) => { setOrganizer(payload); setModalOrganizerVisible(false); };
 
   const filtered = participants.filter(p =>
     (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
     (p.ic || '').includes(search)
-  );
-
-  return (
-    <ScrollView style={styles.container}>
-      <Image source={{ uri: organizerImage }} style={styles.logo} />
+  );return (
+    <View style={styles.container}>
+      {/* Logo / Judul */}
+      <Image source={{ uri: 'https://via.placeholder.com/80' }} style={styles.logo} />
       <Text style={styles.title}>eKEMATIAN - Pertubuhan Belerang Merah</Text>
 
-      {/* Profil Penganjur */}
-      <Text style={{ fontSize: 16, fontWeight: 'bold', marginTop: 12 }}>Profil Penganjur</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-        <Image source={{ uri: organizerImage }} style={{ width: 60, height: 60, borderRadius: 30, marginRight: 10 }} />
-        <View>
-          <Text>Pertubuhan Belerang Merah</Text>
-          <TouchableOpacity onPress={() => Linking.openURL('https://youtube.com/yourchannel')}>
-            <Text style={{ color: '#007bff' }}>YouTube Penganjur</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => Linking.openURL('https://yourwebsite.com')}>
-            <Text style={{ color: '#007bff' }}>Website Penganjur</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleUploadOrganizerImage} style={{ marginTop: 4 }}>
-            <Text style={{ color: '#28a
+      {/* Stats */}
+      <View style={styles.stats}>
+        <Text>Ahli: {totalParticipants}</Text>
+        <Text>Masuk: {fmt(totalIncome)}</Text>
+        <Text>Keluar: {fmt(totalExpense)}</Text>
+        <Text>Maintenance: {fmt(maintenance)}</Text>
+        <Text style={{ fontWeight: 'bold' }}>Baki: {fmt(balance)}</Text>
+      </View>
+
+      {/* Search */}
+      <TextInput style={styles.input} placeholder="Cari nama atau IC..." value={search} onChangeText={setSearch} />
+
+      {/* Buttons */}
+      <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'space-between', marginBottom: 8 }}>
+        <View style={{ flex: 1, marginRight: 6 }}><Button title="Tambah Ahli" onPress={() => { setEditData(null); setModalVisible(true); }} /></View>
+        <View style={{ flex: 1, marginLeft: 6 }}><Button title="Eksport PDF" onPress={handleExportPDF} /></View>
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'space-between', marginBottom: 8 }}>
+        <View style={{ flex: 1, marginRight: 6 }}><Button title="Eksport CSV" onPress={handleExportCSV} /></View>
+        <View style={{ flex: 1, marginLeft: 6 }}><Button title="Import JSON" onPress={handleUploadJSON} /></View>
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'space-between', marginBottom: 8 }}>
+        <View style={{ flex: 1, marginRight: 6 }}><Button title="Reset Dummy" onPress={resetDummy} color="#f0ad4e" /></View>
+        <View style={{ flex: 1, marginLeft: 6 }}><Button title="Clear Semua" onPress={clearAll} color="#d9534f" /></View>
+      </View>
+
+      {/* Organizer */}
+      <View style={{ marginBottom: 10 }}>
+        <Button title="Profil Penganjur / YouTube" onPress={() => setModalOrganizerVisible(true)} color="#5cb85c" />
+      </View>
+
+      {/* Participant List */}
+      <Text style={styles.subtitle}>Senarai Peserta</Text>
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => (
+          <ClaimItem
+            participant={item}
+            onEdit={(d) => { setEditData(d); setModalVisible(true); }}
+            onDelete={handleDelete}
+            onMarkDead={handleMarkDead}
+          />
+        )}
+        ListEmptyComponent={<Text>Tiada peserta.</Text>}
+      />
+
+      {/* Volunteer List */}
+      <Text style={styles.subtitle}>Senarai Sukarelawan</Text>
+      <FlatList data={volunteers} keyExtractor={(i) => String(i.id)} renderItem={({ item }) => <VolunteerItem volunteer={item} />} />
+
+      {/* Modals */}
+      <AddEditModal visible={modalVisible} onClose={() => setModalVisible(false)} onSave={handleSaveParticipant} editData={editData} />
+
+      <Modal visible={modalOrganizerVisible} animationType="slide">
+        <ScrollView style={{ flex: 1, padding: 18, backgroundColor: '#fff' }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Profil Penganjur</Text>
+          <TextInput style={styles.input} placeholder="Nama Penganjur" value={organizer.name} onChangeText={(t) => setOrganizer(o => ({ ...o, name: t }))} />
+          <TextInput style={styles.input} placeholder="Link YouTube" value={organizer.youtube} onChangeText={(t) => setOrganizer(o => ({ ...o, youtube: t }))} />
+          <TextInput style={styles.input} placeholder="Link Gambar / Event" value={organizer.image} onChangeText={(t) => setOrganizer(o => ({ ...o, image: t }))} />
+          <View style={{ marginTop: 12 }}>
+            <Button title="Simpan Profil" onPress={() => handleSaveOrganizer(organizer)} />
+          </View>
+          <View style={{ marginTop: 8 }}>
+            <Button title="Batal" color="#6c757d" onPress={() => setModalOrganizerVisible(false)} />
+          </View>
+        </ScrollView>
+      </Modal>
+    </View>
+  );
+}
+
+// ----------------- Styles -----------------
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
+  logo: { width: 80, height: 80, alignSelf: 'center', marginBottom: 6 },
+  title: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
+  stats: { padding: 10, borderWidth: 1, borderColor: '#eee', borderRadius: 8, marginBottom: 10, backgroundColor: '#fafafa' },
+  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, marginBottom: 10 },
+  subtitle: { fontSize: 16, fontWeight: 'bold', marginTop: 12, marginBottom: 6 },
+  item: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderColor: '#eee' },
+  avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 12 },
+  name: { fontWeight: 'bold' },
+  btnSmall: { backgroundColor: '#007bff', paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6 },
+  btnText: { color: '#fff', fontSize: 12 }
+});
