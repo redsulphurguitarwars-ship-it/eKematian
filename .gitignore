@@ -1,0 +1,10 @@
+# Binaries
+*.exe
+*.o
+*.out
+
+# Logs
+*.log
+
+# Mac
+.DS_Store
