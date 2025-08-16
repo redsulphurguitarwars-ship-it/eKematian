@@ -1,0 +1,31 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ master ] # Trigger apabila kod ditolak ke cabang master
+jobs:
+  build:
+    runs-on: ubuntu-latest # Pelayan maya untuk menjalankan binaan
+
+    steps:
+      - uses: actions/checkout@v2 # Daftar keluar kod daripada repositori
+
+      - name: Set up JDK 1.8 # Sediakan Java Development Kit
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Install dependencies # Pasang kebergantungan projek
+        run: npm install
+
+      - name: Make gradlew executable # Jadikan Gradle boleh laku
+        run: chmod +x android/gradlew
+
+      - name: Build Release APK # Bina APK keluaran
+        run: cd android && ./gradlew assembleRelease
+
+      - name: Upload APK # Muat naik APK sebagai artifak
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-release.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
