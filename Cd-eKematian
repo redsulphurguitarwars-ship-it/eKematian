@@ -1,15 +1,30 @@
-// App.js — eKEMATIAN full dengan Radio
+// App.js — eKEMATIAN single-file final (CRUD, search, death payment logic, upload, export PDF/CSV, profil penganjur)
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, Image, FlatList, StyleSheet, TextInput, Button,
-  TouchableOpacity, Modal, Alert, ScrollView
+  TouchableOpacity, Modal, Alert, ScrollView, Linking
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
-import { Audio } from 'expo-av';
+
+/*
+Data shape for each participant:
+{
+id: number,
+name: string,
+ic: string,
+address: string,
+will: string,
+income: number,
+expense: number,
+funeral: number,
+status: 'alive' | 'dead',
+image: string
+}
+*/
 
 const STORAGE_KEY = 'ekematian_participants_v1';
 const MAINT_KEY = 'ekematian_maintenance_v1';
@@ -23,7 +38,10 @@ const loadData = async (key) => {
   catch (e) { console.error('loadData error', e); return null; }
 };
 
-const fmt = (n) => isNaN(n) ? 'RM0.00' : 'RM' + Number(n).toFixed(2);
+const fmt = (n) => {
+  if (isNaN(n)) return 'RM0.00';
+  return 'RM' + Number(n).toFixed(2);
+};
 
 function ClaimItem({ participant, onEdit, onDelete, onMarkDead }) {
   return (
@@ -35,6 +53,7 @@ function ClaimItem({ participant, onEdit, onDelete, onMarkDead }) {
         <Text style={{ fontSize: 12 }}>{participant.address || ''}</Text>
         <Text style={{ fontSize: 12, color: '#333' }}>In: {fmt(participant.income)}  Out: {fmt(participant.expense)}  Funeral: {fmt(participant.funeral || 0)}</Text>
       </View>
+
       <View style={{ alignItems: 'flex-end' }}>
         <TouchableOpacity onPress={() => onEdit(participant)} style={styles.btnSmall}>
           <Text style={styles.btnText}>Edit</Text>
@@ -105,11 +124,13 @@ function AddEditModal({ visible, onClose, onSave, editData }) {
     <Modal visible={visible} animationType="slide">
       <ScrollView style={{ flex: 1, padding: 18, backgroundColor: '#fff' }}>
         <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>{editData ? 'Ubah Ahli' : 'Tambah Ahli (Yuran RM33)'}</Text>
+
         <TextInput style={styles.input} placeholder="Nama" value={name} onChangeText={setName} />
         <TextInput style={styles.input} placeholder="No. IC" value={ic} onChangeText={setIc} />
         <TextInput style={styles.input} placeholder="Alamat waris" value={address} onChangeText={setAddress} />
         <TextInput style={styles.input} placeholder="Wasiat / Catatan hutang" value={will} onChangeText={setWill} />
         <TextInput style={styles.input} placeholder="Kos jenazah (optional)" value={funeral} onChangeText={setFuneral} keyboardType="numeric" />
+
         <View style={{ marginTop: 12 }}>
           <Button title={editData ? 'Simpan Perubahan' : 'Tambah Ahli (bayar RM33)'} onPress={handleSave} />
         </View>
@@ -127,10 +148,7 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [editData, setEditData] = useState(null);
-
-  // Radio state
-  const [radioSound, setRadioSound] = useState(null);
-  const [radioPlaying, setRadioPlaying] = useState(false);
+  const [organizerImage, setOrganizerImage] = useState('https://via.placeholder.com/60');
 
   const volunteers = [
     { id: 201, name: 'Ketua Sukarelawan - Siti', role: 'Ketua', image: 'https://via.placeholder.com/80' },
@@ -179,6 +197,7 @@ export default function App() {
 
   const handleMarkDead = (deceased) => {
     if (deceased.status === 'dead') { Alert.alert('Nota', 'Ahli ini sudah ditandakan meninggal.'); return; }
+
     Alert.alert('Sahkan', `Tandakan ${deceased.name} sebagai meninggal? Ini akan caj RM1 kepada setiap ahli hidup lain.`, [
       { text: 'Batal', style: 'cancel' },
       {
@@ -226,44 +245,54 @@ export default function App() {
   };
 
   const handleExportPDF = async () => {
-    const html = `<html>
+    const html = `
+      <html>
       <body>
-      <h1>eKEMATIAN — Laporan Audit</h1>
-      <p>Tarikh: ${new Date().toLocaleString()}</p>
-      <p>Jumlah peserta: ${totalParticipants}</p>
-      <p>Jumlah masuk: ${fmt(totalIncome)}</p>
-      <p>Jumlah keluar: ${fmt(totalExpense)}</p>
-      <p>Dana maintenance: ${fmt(maintenance)}</p>
-      <p>Baki: ${fmt(balance)}</p>
-      <h2>Senarai Peserta</h2>
-      <table border="1" cellpadding="6" cellspacing="0">
-      <thead><tr><th>Nama</th><th>IC</th><th>Status</th><th>In</th><th>Out</th><th>Funeral</th></tr></thead>
-      <tbody>${participants.map(p => `<tr>
-      <td>${p.name}</td>
-      <td>${p.ic || ''}</td>
-      <td>${p.status}</td>
-      <td>${Number(p.income || 0).toFixed(2)}</td>
-      <td>${Number(p.expense || 0).toFixed(2)}</td>
-      <td>${Number(p.funeral || 0).toFixed(2)}</td>
-      </tr>`).join('')}</tbody>
-      </table>
+        <h1>eKEMATIAN — Laporan Audit</h1>
+        <p>Tarikh: ${new Date().toLocaleString()}</p>
+        <p>Jumlah peserta: ${totalParticipants}</p>
+        <p>Jumlah masuk: ${fmt(totalIncome)}</p>
+        <p>Jumlah keluar: ${fmt(totalExpense)}</p>
+        <p>Dana maintenance: ${fmt(maintenance)}</p>
+        <p>Baki: ${fmt(balance)}</p>
+        <h2>Senarai Peserta</h2>
+        <table border="1" cellpadding="6" cellspacing="0">
+          <thead><tr><th>Nama</th><th>IC</th><th>Status</th><th>In</th><th>Out</th><th>Funeral</th></tr></thead>
+          <tbody>
+          ${participants.map(p => `<tr>
+            <td>${p.name}</td>
+            <td>${p.ic || ''}</td>
+            <td>${p.status}</td>
+            <td>${Number(p.income || 0).toFixed(2)}</td>
+            <td>${Number(p.expense || 0).toFixed(2)}</td>
+            <td>${Number(p.funeral || 0).toFixed(2)}</td>
+          </tr>`).join('')}
+          </tbody>
+        </table>
       </body>
-      </html>`;
+      </html>
+    `;
     try {
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri, { mimeType: 'application/pdf' });
-    } catch (e) { Alert.alert('Ralat', 'Gagal eksport PDF: ' + String(e)); console.error(e); }
+    } catch (e) {
+      Alert.alert('Ralat', 'Gagal eksport PDF: ' + String(e));
+      console.error(e);
+    }
   };
 
   const handleExportCSV = async () => {
     const rows = [['name','ic','address','status','income','expense','funeral','will']];
-    participants.forEach(p => rows.push([p.name,p.ic||'',p.address||'',p.status||'alive',p.income||0,p.expense||0,p.funeral||0,p.will||'']));
+    participants.forEach(p => { rows.push([p.name,p.ic||'',p.address||'',p.status||'alive',p.income||0,p.expense||0,p.funeral||0,p.will||'']); });
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
     try {
       const path = FileSystem.cacheDirectory + `ekematian_export_${Date.now()}.csv`;
       await FileSystem.writeAsStringAsync(path, csv, { encoding: FileSystem.EncodingType.UTF8 });
       await Sharing.shareAsync(path, { mimeType: 'text/csv' });
-    } catch (e) { Alert.alert('Ralat', 'Gagal eksport CSV: ' + String(e)); console.error(e); }
+    } catch (e) {
+      Alert.alert('Ralat', 'Gagal eksport CSV: ' + String(e));
+      console.error(e);
+    }
   };
 
   const handleUploadJSON = async () => {
@@ -290,25 +319,21 @@ export default function App() {
           { text: 'Gantikan', onPress: async () => { setParticipants(normalized); await saveData(STORAGE_KEY, normalized); } }
         ]);
       }
-    } catch (e) { console.error(e); Alert.alert('Ralat', 'Gagal import: ' + String(e)); }
+    } catch (e) {
+      console.error(e); Alert.alert('Ralat', 'Gagal import: ' + String(e));
+    }
   };
 
-  // Radio play/pause
-  const toggleRadio = async () => {
+  const handleUploadOrganizerImage = async () => {
     try {
-      if (!radioSound) {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: 'https://your-radio-stream-url.mp3' },
-          { shouldPlay: true }
-        );
-        setRadioSound(sound);
-        setRadioPlaying(true);
-      } else {
-        if (radioPlaying) await radioSound.pauseAsync();
-        else await radioSound.playAsync();
-        setRadioPlaying(!radioPlaying);
+      const res = await DocumentPicker.getDocumentAsync({ type: 'image/*' });
+      if (res.type === 'success') {
+        setOrganizerImage(res.uri);
       }
-    } catch (e) { console.error('Radio error', e); }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Ralat', 'Gagal upload gambar: ' + String(e));
+    }
   };
 
   const filtered = participants.filter(p =>
@@ -317,25 +342,21 @@ export default function App() {
   );
 
   return (
-    <View style={styles.container}>
-      <Image source={{ uri: 'https://via.placeholder.com/80' }} style={styles.logo} />
+    <ScrollView style={styles.container}>
+      <Image source={{ uri: organizerImage }} style={styles.logo} />
       <Text style={styles.title}>eKEMATIAN - Pertubuhan Belerang Merah</Text>
 
-      <View style={styles.stats}>
-        <Text>Ahli: {totalParticipants}</Text>
-        <Text>Masuk: {fmt(totalIncome)}</Text>
-        <Text>Keluar: {fmt(totalExpense)}</Text>
-        <Text>Maintenance: {fmt(maintenance)}</Text>
-        <Text style={{ fontWeight: 'bold' }}>Baki: {fmt(balance)}</Text>
-      </View>
-
-      <Button title={radioPlaying ? 'Pause Radio' : 'Main Radio'} onPress={toggleRadio} />
-
-      <TextInput style={styles.input} placeholder="Cari nama atau IC..." value={search} onChangeText={setSearch} />
-
-      <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'space-between', marginBottom: 8 }}>
-        <View style={{ flex: 1, marginRight: 6 }}><Button title="Tambah Ahli" onPress={() => { setEditData(null); setModalVisible(true); }} /></View>
-        <View style={{ flex: 1, marginLeft: 6 }}><Button title="Eksport PDF" onPress={handleExportPDF} /></View>
-      </View>
-
-      <View style={{ flexDirection: 'row', gap:
+      {/* Profil Penganjur */}
+      <Text style={{ fontSize: 16, fontWeight: 'bold', marginTop: 12 }}>Profil Penganjur</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+        <Image source={{ uri: organizerImage }} style={{ width: 60, height: 60, borderRadius: 30, marginRight: 10 }} />
+        <View>
+          <Text>Pertubuhan Belerang Merah</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://youtube.com/yourchannel')}>
+            <Text style={{ color: '#007bff' }}>YouTube Penganjur</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => Linking.openURL('https://yourwebsite.com')}>
+            <Text style={{ color: '#007bff' }}>Website Penganjur</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleUploadOrganizerImage} style={{ marginTop: 4 }}>
+            <Text style={{ color: '#28a
