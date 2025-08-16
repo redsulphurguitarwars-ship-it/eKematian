@@ -1,12 +1,26 @@
-# eKEMATIAN App - Pertubuhan Belerang Merah
+# eKematian
 
-Sistem pengurusan kematian untuk memudahkan urusan waris, tuntutan, dan penyelarasan sukarelawan.
+Sistem pengurusan maklumat kematian secara digital.
 
-## 🚀 Teknologi
-- React Native (Expo)
-- Supabase (Database & Auth)
-- Node.js (Backend API)
+## Ciri-ciri
+- Pendaftaran maklumat kematian
+- Carian rekod kematian
+- Penyimpanan data secara mudah
 
-## 📦 Cara Guna di Codespaces
-1. Buka repo ini dalam Codespaces.
-2. Dalam terminal, jalankan:
+## Cara Guna
+
+1. Pastikan anda ada bash/sh di sistem anda.
+2. Jalankan skrip utama:
+
+```bash
+bash src/main.sh
+```
+
+## Struktur Projek
+
+- `src/` - Skrip utama projek
+- `docs/` - Dokumentasi tambahan
+- `LICENSE` - Lesen projek
+
+## Penulis
+- datonazri33-png
