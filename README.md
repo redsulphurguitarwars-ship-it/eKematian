@@ -12,8 +12,7 @@ Sistem pengurusan maklumat kematian secara digital.
 1. Pastikan anda ada bash/sh di sistem anda.
 2. Jalankan skrip utama:
 
-```bash
-bash src/main.sh
+```bash main.sh
 ```
 
 ## Struktur Projek
