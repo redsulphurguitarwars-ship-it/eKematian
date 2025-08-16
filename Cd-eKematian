@@ -1,20 +1,20 @@
 // ----------------- Bahagian 1: Import & Helper Functions -----------------
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-    View,
-    Text,
-    Image,
-    FlatList,
-    StyleSheet,
-    TextInput,
-    Button,
-    TouchableOpacity,
-    Modal,
-    Alert,
-    ScrollView,
-    ActivityIndicator,
-    Linking,
-    Platform, // Untuk gaya khusus platform
+  View,
+  Text,
+  Image,
+  FlatList,
+  StyleSheet,
+  TextInput,
+  Button,
+  TouchableOpacity,
+  Modal,
+  Alert,
+  ScrollView,
+  ActivityIndicator,
+  Linking,
+  Platform, // Untuk gaya khusus platform
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
@@ -30,37 +30,37 @@ const MAINT_KEY = 'ekematian_maintenance_v1';
 const ORG_KEY = 'ekematian_organizer_v1';
 
 // API Endpoint (Gantikan dengan URL API anda yang sebenar)
-const API_ENDPOINT = 'https://api.example.com/ekematian';
+const API_ENDPOINT = 'https://api.example.com/api/ekematian';
 
 // Default Image URL
 const DEFAULT_IMAGE_URL = 'https://via.placeholder.com/80';
 
 // Helper functions
 const saveData = async (key, value) => {
-    try {
-        await AsyncStorage.setItem(key, JSON.stringify(value));
-        console.log(`Data berjaya disimpan untuk kunci: ${key}`);
-    } catch (error) {
-        console.error(`Gagal menyimpan data untuk kunci ${key}:`, error);
-        Alert.alert('Ralat', 'Gagal menyimpan data. Sila cuba lagi.');
-    }
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify(value));
+    console.log(`Data berjaya disimpan untuk kunci: ${key}`);
+  } catch (error) {
+    console.error(`Gagal menyimpan data untuk kunci ${key}:`, error);
+    Alert.alert('Ralat', 'Gagal menyimpan data. Sila cuba lagi.');
+  }
 };
 
 const loadData = async (key) => {
-    try {
-        const value = await AsyncStorage.getItem(key);
-        if (value !== null) {
-            console.log(`Data berjaya dimuatkan untuk kunci: ${key}`);
-            return JSON.parse(value);
-        } else {
-            console.log(`Tiada data dijumpai untuk kunci: ${key}`);
-            return null;
-        }
-    } catch (error) {
-        console.error(`Gagal memuatkan data untuk kunci ${key}:`, error);
-        Alert.alert('Ralat', 'Gagal memuatkan data. Sila cuba lagi.');
-        return null;
+  try {
+    const value = await AsyncStorage.getItem(key);
+    if (value !== null) {
+      console.log(`Data berjaya dimuatkan untuk kunci: ${key}`);
+      return JSON.parse(value);
+    } else {
+      console.log(`Tiada data dijumpai untuk kunci: ${key}`);
+      return null;
     }
+  } catch (error) {
+    console.error(`Gagal memuatkan data untuk kunci ${key}:`, error);
+    Alert.alert('Ralat', 'Gagal memuatkan data. Sila cuba lagi.');
+    return null;
+  }
 };
 
 const fmt = (n) => (isNaN(n) ? 'RM0.00' : 'RM' + Number(n).toFixed(2));
@@ -68,427 +68,1079 @@ const fmt = (n) => (isNaN(n) ? 'RM0.00' : 'RM' + Number(n).toFixed(2));
 // ----------------- Bahagian 3: Komponen Item -----------------
 
 const ClaimItem = React.memo(function ClaimItem({ participant, onEdit, onDelete, onMarkDead, onUploadReceipt }) {
-    const handleReceiptPress = () => {
-        if (participant.receipt) {
-            Linking.openURL(participant.receipt).catch((err) => console.error('Ralat membuka URL resit:', err));
-        } else {
-            Alert.alert('Nota', 'Tiada resit dimuat naik untuk peserta ini.');
-        }
-    };
+  const handleReceiptPress = () => {
+    if (participant.receipt) {
+      Linking.openURL(participant.receipt).catch((err) => console.error('Ralat membuka URL resit:', err));
+    } else {
+      Alert.alert('Nota', 'Tiada resit dimuat naik untuk peserta ini.');
+    }
+  };
 
-    return (
-        <View style={styles.listItem}>
-            <Image source={{ uri: participant.image || DEFAULT_IMAGE_URL }} style={styles.avatar} />
-            <View style={{ flex: 1, marginRight: 8 }}>
-                <Text style={styles.name}>
-                    {participant.name} {participant.status === 'dead' ? '(Meninggal)' : ''}
-                </Text>
-                <Text style={styles.ic}>No. IC: {participant.ic}</Text>
-                <Text style={styles.address}>Alamat: {participant.address || 'Tiada'}</Text>
-                <Text style={styles.financeInfo}>
-                    Masuk: {fmt(participant.income)} | Keluar: {fmt(participant.expense)} | Jenazah: {fmt(participant.funeral || 0)}
-                </Text>
-                {participant.receipt && (
-                    <TouchableOpacity onPress={handleReceiptPress}>
-                        <Text style={styles.receiptLink}>Lihat Resit</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-                <TouchableOpacity onPress={() => onEdit(participant)} style={styles.editButton}>
-                    <Text style={styles.buttonText}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => onDelete(participant.id)} style={styles.deleteButton}>
-                    <Text style={styles.buttonText}>Padam</Text>
-                </TouchableOpacity>
-                {participant.status !== 'dead' && (
-                    <TouchableOpacity onPress={() => onMarkDead(participant)} style={styles.markDeadButton}>
-                        <Text style={styles.buttonText}>Tandakan Meninggal</Text>
-                    </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                    onPress={() => onUploadReceipt(participant)}
-                    style={styles.uploadReceiptButton}
-                >
-                    <Text style={styles.buttonText}>Muat Naik Resit</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+  return (
+    <View style={styles.listItem}>
+      <Image source={{ uri: participant.image || DEFAULT_IMAGE_URL }} style={styles.avatar} />
+      <View style={{ flex: 1, marginRight: 8 }}>
+        <Text style={styles.name}>
+          {participant.name} {participant.status === 'dead' ? '(Meninggal)' : ''}
+        </Text>
+        <Text style={styles.ic}>No. IC: {participant.ic}</Text>
+        <Text style={styles.address}>Alamat: {participant.address || 'Tiada'}</Text>
+        <Text style={styles.financeInfo}>
+          Masuk: {fmt(participant.income)} | Keluar: {fmt(participant.expense)} | Jenazah: {fmt(participant.funeral || 0)}
+        </Text>
+        {participant.receipt && (
+          <TouchableOpacity onPress={handleReceiptPress}>
+            <Text style={styles.receiptLink}>Lihat Resit</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <TouchableOpacity onPress={() => onEdit(participant)} style={styles.editButton}>
+          <Text style={styles.buttonText}>Edit</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => onDelete(participant.id)} style={styles.deleteButton}>
+          <Text style={styles.buttonText}>Padam</Text>
+        </TouchableOpacity>
+        {participant.status !== 'dead' && (
+          <TouchableOpacity onPress={() => onMarkDead(participant)} style={styles.markDeadButton}>
+            <Text style={styles.buttonText}>Tandakan Meninggal</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          onPress={() => onUploadReceipt(participant)}
+          style={styles.uploadReceiptButton}
+        >
+          <Text style={styles.buttonText}>Muat Naik Resit</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 });
 
 function VolunteerItem({ volunteer }) {
-    return (
-        <View style={styles.listItem}>
-            <Image source={{ uri: volunteer.image || DEFAULT_IMAGE_URL }} style={styles.avatar} />
-            <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{volunteer.name}</Text>
-                <Text style={styles.ic}>Peranan: {volunteer.role}</Text>
-            </View>
-        </View>
-    );
+  return (
+    <View style={styles.listItem}>
+      <Image source={{ uri: volunteer.image || DEFAULT_IMAGE_URL }} style={styles.avatar} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.name}>{volunteer.name}</Text>
+        <Text style={styles.ic}>Peranan: {volunteer.role}</Text>
+      </View>
+    </View>
+  );
 }
 
 // ----------------- Bahagian 4: Modals -----------------
 
 function AddEditModal({ visible, onClose, onSave, editData }) {
-    const [name, setName] = useState('');
-    const [ic, setIc] = useState('');
-    const [address, setAddress] = useState('');
-    const [will, setWill] = useState('');
-    const [funeral, setFuneral] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+  const [name, setName] = useState('');
+  const [ic, setIc] = useState('');
+  const [address, setAddress] = useState('');
+  const [will, setWill] = useState('');
+  const [funeral, setFuneral] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        if (editData) {
-            setName(editData.name || '');
-            setIc(editData.ic || '');
-            setAddress(editData.address || '');
-            setWill(editData.will || '');
-            setFuneral(String(editData.funeral || '');
-        } else {
-            setName('');
-            setIc('');
-            setAddress('');
-            setWill('');
-            setFuneral('');
-        }
-    }, [editData]);
+  useEffect(() => {
+    if (editData) {
+      setName(editData.name || '');
+      setIc(editData.ic || '');
+      setAddress(editData.address || '');
+      setWill(editData.will || '');
+      setFuneral(String(editData.funeral || '');
+    } else {
+      setName('');
+      setIc('');
+      setAddress('');
+      setWill('');
+      setFuneral('');
+    }
+  }, [editData]);
 
-    const handleSave = useCallback(async () => {
-        if (!name) {
-            Alert.alert('Amaran', 'Sila masukkan nama.');
-            return;
-        }
+  const handleSave = useCallback(async () => {
+    if (!name) {
+      Alert.alert('Amaran', 'Sila masukkan nama.');
+      return;
+    }
 
-        setIsLoading(true);
-        try {
-            const payload = {
-                id: editData ? editData.id : Date.now(),
-                name: name.trim(),
-                ic: ic.trim(),
-                address: address.trim(),
-                will: will.trim(),
-                income: editData ? Number(editData.income || 0) : 33.0,
-                expense: editData ? Number(editData.expense || 0) : 0,
-                funeral: Number(funeral || 0),
-                status: editData ? editData.status || 'alive' : 'alive',
-                image: editData ? editData.image : DEFAULT_IMAGE_URL,
-            };
-            await onSave(payload);
-            onClose();
-        } catch (error) {
-            console.error('Ralat menyimpan ahli:', error);
-            Alert.alert('Ralat', 'Gagal menyimpan ahli. Sila cuba lagi.');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [name, ic, address, will, funeral, editData, onSave, onClose]);
+    setIsLoading(true);
+    try {
+      const payload = {
+        id: editData ? editData.id : Date.now(),
+        name: name.trim(),
+        ic: ic.trim(),
+        address: address.trim(),
+        will: will.trim(),
+        income: editData ? Number(editData.income || 0) : 33.0,
+        expense: editData ? Number(editData.expense || 0) : 0,
+        funeral: Number(funeral || 0),
+        status: editData ? editData.status || 'alive' : 'alive',
+        image: editData ? editData.image : DEFAULT_IMAGE_URL,
+      };
+      await onSave(payload);
+      onClose();
+    } catch (error) {
+      console.error('Ralat menyimpan ahli:', error);
+      Alert.alert('Ralat', 'Gagal menyimpan ahli. Sila cuba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [name, ic, address, will, funeral, editData, onSave, onClose]);
 
-    return (
-        <Modal visible={visible} animationType="slide">
-            <ScrollView style={styles.modalContainer}>
-                <Text style={styles.modalTitle}>{editData ? 'Ubah Ahli' : 'Tambah Ahli (Yuran RM33)'}</Text>
-                <Text style={styles.label}>Nama Penuh</Text>
-                <TextInput style={styles.input} placeholder="Nama" value={name} onChangeText={setName} />
-                <Text style={styles.label}>No. Kad Pengenalan</Text>
-                <TextInput style={styles.input} placeholder="No. IC" value={ic} onChangeText={setIc} keyboardType="number-pad" />
-                <Text style={styles.label}>Alamat Waris</Text>
-                <TextInput style={styles.input} placeholder="Alamat waris" value={address} onChangeText={setAddress} />
-                <Text style={styles.label}>Wasiat / Catatan Hutang</Text>
-                <TextInput style={styles.input} placeholder="Wasiat / Catatan hutang" value={will} onChangeText={setWill} />
-                <Text style={styles.label}>Kos Jenazah (Optional)</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Kos jenazah (optional)"
-                    value={funeral}
-                    onChangeText={setFuneral}
-                    keyboardType="numeric"
-                />
-                <View style={styles.modalButtonsContainer}>
-                    <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isLoading}>
-                        <Text style={styles.buttonText}>{editData ? 'Simpan Perubahan' : 'Tambah Ahli (Bayar RM33)'}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.cancelButton} onPress={onClose} disabled={isLoading}>
-                        <Text style={styles.buttonText}>Batal</Text>
-                    </TouchableOpacity>
-                    {isLoading && <ActivityIndicator style={styles.loadingIndicator} />}
-                </View>
-            </ScrollView>
-        </Modal>
-    );
+  return (
+    <Modal visible={visible} animationType="slide">
+      <ScrollView style={styles.modalContainer}>
+        <Text style={styles.modalTitle}>{editData ? 'Ubah Ahli' : 'Tambah Ahli (Yuran RM33)'}</Text>
+        <Text style={styles.label}>Nama Penuh</Text>
+        <TextInput style={styles.input} placeholder="Nama" value={name} onChangeText={setName} />
+        <Text style={styles.label}>No. Kad Pengenalan</Text>
+        <TextInput style={styles.input} placeholder="No. IC" value={ic} onChangeText={setIc} keyboardType="number-pad" />
+        <Text style={styles.label}>Alamat Waris</Text>
+        <TextInput style={styles.input} placeholder="Alamat waris" value={address} onChangeText={setAddress} />
+        <Text style={styles.label}>Wasiat / Catatan Hutang</Text>
+        <TextInput style={styles.input} placeholder="Wasiat / Catatan hutang" value={will} onChangeText={setWill} />
+        <Text style={styles.label}>Kos Jenazah (Optional)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Kos jenazah (optional)"
+          value={funeral}
+          onChangeText={setFuneral}
+          keyboardType="numeric"
+        />
+        <View style={styles.modalButtonsContainer}>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isLoading}>
+            <Text style={styles.buttonText}>{editData ? 'Simpan Perubahan' : 'Tambah Ahli (Bayar RM33)'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelButton} onPress={onClose} disabled={isLoading}>
+            <Text style={styles.buttonText}>Batal</Text>
+          </TouchableOpacity>
+          {isLoading && <ActivityIndicator style={styles.loadingIndicator} />}
+        </View>
+      </ScrollView>
+    </Modal>
+  );
 }
 
 function OrganizerModal({ visible, organizer, onSave, onClose }) {
-    const [localOrganizer, setLocalOrganizer] = useState(organizer);
+  const [localOrganizer, setLocalOrganizer] = useState(organizer);
 
-    useEffect(() => {
-        setLocalOrganizer(organizer);
-    }, [organizer]);
+  useEffect(() => {
+    setLocalOrganizer(organizer);
+  }, [organizer]);
 
-    const handleSave = () => {
-        onSave(localOrganizer);
-        onClose();
-    };
+  const handleSave = () => {
+    onSave(localOrganizer);
+    onClose();
+  };
 
-    return (
-        <Modal visible={visible} animationType="slide">
-            <ScrollView style={styles.modalContainer}>
-                <Text style={styles.modalTitle}>Profil Penganjur</Text>
-                <Text style={styles.label}>Nama Penganjur</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Nama Penganjur"
-                    value={localOrganizer.name}
-                    onChangeText={(t) => setLocalOrganizer((o) => ({ ...o, name: t }))}
-                />
-                <Text style={styles.label}>Pautan YouTube</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Pautan YouTube"
-                    value={localOrganizer.youtube}
-                    onChangeText={(t) => setLocalOrganizer((o) => ({ ...o, youtube: t }))}
-                />
-                <Text style={styles.label}>Pautan Gambar / Event</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Pautan Gambar / Event"
-                    value={localOrganizer.image}
-                    onChangeText={(t) => setLocalOrganizer((o) => ({ ...o, image: t }))}
-                />
-                <View style={styles.modalButtonsContainer}>
-                    <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                        <Text style={styles.buttonText}>Simpan Profil</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                        <Text style={styles.buttonText}>Batal</Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </Modal>
-    );
+  return (
+    <Modal visible={visible} animationType="slide">
+      <ScrollView style={styles.modalContainer}>
+        <Text style={styles.modalTitle}>Profil Penganjur</Text>
+        <Text style={styles.label}>Nama Penganjur</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Nama Penganjur"
+          value={localOrganizer.name}
+          onChangeText={(t) => setLocalOrganizer((o) => ({ ...o, name: t }))}
+        />
+        <Text style={styles.label}>Pautan YouTube</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Pautan YouTube"
+          value={localOrganizer.youtube}
+          onChangeText={(t) => setLocalOrganizer((o) => ({ ...o, youtube: t }))}
+        />
+        <Text style={styles.label}>Pautan Gambar / Event</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Pautan Gambar / Event"
+          value={localOrganizer.image}
+          onChangeText={(t) => setLocalOrganizer((o) => ({ ...o, image: t }))}
+        />
+        <View style={styles.modalButtonsContainer}>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.buttonText}>Simpan Profil</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+            <Text style={styles.buttonText}>Batal</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </Modal>
+  );
 }
 
 function UploadReceiptModal({ visible, onClose, onUpload, participant }) {
-    const [receipt, setReceipt] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const abortControllerRef = useRef(null);
+  const [receipt, setReceipt] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const abortControllerRef = useRef(null);
 
-    const pickDocument = useCallback(async () => {
-        try {
-            const res = await DocumentPicker.getDocumentAsync({
-                type: 'image/*',
-            });
+  const pickDocument = useCallback(async () => {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({
+        type: 'image/*',
+      });
 
-            if (res.type === 'success') {
-                setReceipt(res.uri);
-            } else {
-                Alert.alert('Dibatalkan', 'Pemilihan fail dibatalkan.');
-            }
-        } catch (error) {
-            console.error('Ralat memilih fail:', error);
-            Alert.alert('Ralat', 'Gagal memilih fail: ' + String(error));
-        }
-    }, []);
+      if (res.type === 'success') {
+        setReceipt(res.uri);
+      } else {
+        Alert.alert('Dibatalkan', 'Pemilihan fail dibatalkan.');
+      }
+    } catch (error) {
+      console.error('Ralat memilih fail:', error);
+      Alert.alert('Ralat', 'Gagal memilih fail: ' + String(error));
+    }
+  }, []);
 
-    const handleUpload = useCallback(async () => {
-        if (!receipt) {
-            Alert.alert('Amaran', 'Sila pilih resit untuk dimuat naik.');
-            return;
-        }
+  const handleUpload = useCallback(async () => {
+    if (!receipt) {
+      Alert.alert('Amaran', 'Sila pilih resit untuk dimuat naik.');
+      return;
+    }
 
-        setIsLoading(true);
-        setUploadProgress(0);
-        abortControllerRef.current = new AbortController();
+    setIsLoading(true);
+    setUploadProgress(0);
+    abortControllerRef.current = new AbortController();
 
-        try {
-            // 1. Mampatkan imej
-            const resizedImage = await ImageManipulator.manipulateAsync(
-                receipt,
-                [{ resize: { width: 800 } }],
-                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-            );
+    try {
+      // 1. Mampatkan imej
+      const resizedImage = await ImageManipulator.manipulateAsync(
+        receipt,
+        [{ resize: { width: 800 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
 
-            // 2. Baca fail sebagai URI data
-            const base64 = await FileSystem.readAsStringAsync(resizedImage.uri, { encoding: 'base64' });
+      // 2. Baca fail sebagai URI data
+      const base64 = await FileSystem.readAsStringAsync(resizedImage.uri, { encoding: 'base64' });
 
-            // 3. Sediakan data untuk dimuat naik
-            const formData = new FormData();
-            formData.append('receipt', {
-                uri: resizedImage.uri,
-                type: 'image/jpeg',
-                name: 'receipt.jpg',
-            });
-            formData.append('participantId', participant.id);
+      // 3. Sediakan data untuk dimuat naik
+      const formData = new FormData();
+      formData.append('receipt', {
+        uri: resizedImage.uri,
+        type: 'image/jpeg',
+        name: 'receipt.jpg',
+      });
+      formData.append('participantId', participant.id);
 
-            // 4. Muat naik resit ke API
-            const response = await fetch(`${API_ENDPOINT}/receipts`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-                signal: abortControllerRef.current.signal,
-            });
+      // 4. Muat naik resit ke API
+      const response = await fetch(`${API_ENDPOINT}/receipts`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        signal: abortControllerRef.current.signal,
+      });
 
-            if (!response.ok) {
-                throw new Error(`Gagal memuat naik resit. Status: ${response.status}`);
-            }
+      if (!response.ok) {
+        throw new Error(`Gagal memuat naik resit. Status: ${response.status}`);
+      }
 
-            const responseData = await response.json();
+      const responseData = await response.json();
 
-            // 5. Kemas kini data peserta
-            await onUpload(participant.id, responseData.receiptUrl);
-            Alert.alert('Berjaya', 'Resit berjaya dimuat naik.');
-            onClose();
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                Alert.alert('Dibatalkan', 'Muat naik dibatalkan.');
-            } else {
-                console.error('Ralat memuat naik resit:', error);
-                Alert.alert('Ralat', 'Gagal memuat naik resit. Sila cuba lagi.');
-            }
-        } finally {
-            setIsLoading(false);
-            setUploadProgress(0);
-            abortControllerRef.current = null;
-        }
-    }, [receipt, participant, onUpload, onClose]);
+      // 5. Kemas kini data peserta
+      await onUpload(participant.id, responseData.receiptUrl);
+      Alert.alert('Berjaya', 'Resit berjaya dimuat naik.');
+      onClose();
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        Alert.alert('Dibatalkan', 'Muat naik dibatalkan.');
+      } else {
+        console.error('Ralat memuat naik resit:', error);
+        Alert.alert('Ralat', 'Gagal memuat naik resit. Sila cuba lagi.');
+      }
+    } finally {
+      setIsLoading(false);
+      setUploadProgress(0);
+      abortControllerRef.current = null;
+    }
+  }, [receipt, participant, onUpload, onClose]);
 
-    const handleCancelUpload = () => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-    };
+  const handleCancelUpload = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
 
-    return (
-        <Modal visible={visible} animationType="slide">
-            <ScrollView style={styles.modalContainer}>
-                <Text style={styles.modalTitle}>Muat Naik Resit</Text>
-                {receipt && <Image source={{ uri: receipt }} style={styles.receiptImage} />}
-                <TouchableOpacity style={styles.selectFileButton} onPress={pickDocument} disabled={isLoading}>
-                    <Text style={styles.buttonText}>Pilih Resit</Text>
-                </TouchableOpacity>
-                <View style={styles.modalButtonsContainer}>
-                    <TouchableOpacity style={styles.saveButton} onPress={handleUpload} disabled={isLoading || !receipt}>
-                        <Text style={styles.buttonText}>Muat Naik</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.cancelButton} onPress={onClose} disabled={isLoading}>
-                        <Text style={styles.buttonText}>Batal</Text>
-                    </TouchableOpacity>
-                    {isLoading && (
-                        <View style={styles.uploadingContainer}>
-                            <ActivityIndicator style={styles.loadingIndicator} />
-                            <Text style={styles.uploadProgressText}>Memuat naik: {uploadProgress.toFixed(0)}%</Text>
-                        </View>
-                    )}
-                    {isLoading && (
-                        <TouchableOpacity style={styles.cancelUploadButton} onPress={handleCancelUpload}>
-                            <Text style={styles.buttonText}>Batalkan Muat Naik</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-            </ScrollView>
-        </Modal>
-    );
+  return (
+    <Modal visible={visible} animationType="slide">
+      <ScrollView style={styles.modalContainer}>
+        <Text style={styles.modalTitle}>Muat Naik Resit</Text>
+        {receipt && <Image source={{ uri: receipt }} style={styles.receiptImage} />}
+        <TouchableOpacity style={styles.selectFileButton} onPress={pickDocument} disabled={isLoading}>
+          <Text style={styles.buttonText}>Pilih Resit</Text>
+        </TouchableOpacity>
+        <View style={styles.modalButtonsContainer}>
+          <TouchableOpacity style={styles.saveButton} onPress={handleUpload} disabled={isLoading || !receipt}>
+            <Text style={styles.buttonText}>Muat Naik</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelButton} onPress={onClose} disabled={isLoading}>
+            <Text style={styles.buttonText}>Batal</Text>
+          </TouchableOpacity>
+          {isLoading && (
+            <View style={styles.uploadingContainer}>
+              <ActivityIndicator style={styles.loadingIndicator} />
+              <Text style={styles.uploadProgressText}>Memuat naik: {uploadProgress.toFixed(0)}%</Text>
+            </View>
+          )}
+          {isLoading && (
+            <TouchableOpacity style={styles.cancelUploadButton} onPress={handleCancelUpload}>
+              <Text style={styles.buttonText}>Batalkan Muat Naik</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </ScrollView>
+    </Modal>
+  );
 }
 
 // ----------------- Bahagian 5: Komponen Utama App -----------------
 
 export default function App() {
-    const [participants, setParticipants] = useState([]);
-    const [maintenance, setMaintenance] = useState(0);
-    const [search, setSearch] = useState('');
-    const [modalVisible, setModalVisible] = useState(false);
-    const [editData, setEditData] = useState(null);
-    const [organizer, setOrganizer] = useState({ name: '', youtube: '', image: '' });
-    const [modalOrganizerVisible, setModalOrganizerVisible] = useState(false);
-    const [uploadReceiptModalVisible, setUploadReceiptModalVisible] = useState(false);
-    const [selectedParticipant, setSelectedParticipant] = useState(null);
-    const [isLoading, setIsLoading] = useState(true); // Menunjukkan indicator saat memuat data awal
+  const [participants, setParticipants] = useState([]);
+  const [maintenance, setMaintenance] = useState(0);
+  const [search, setSearch] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [organizer, setOrganizer] = useState({ name: '', youtube: '', image: '' });
+  const [modalOrganizerVisible, setModalOrganizerVisible] = useState(false);
+  const [uploadReceiptModalVisible, setUploadReceiptModalVisible] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // Menunjukkan indicator saat memuat data awal
 
-    const volunteers = [
-        { id: 201, name: 'Ketua Sukarelawan - Siti', role: 'Ketua', image: DEFAULT_IMAGE_URL },
-        { id: 202, name: 'Anggota - Ahmad', role: 'Anggota', image: DEFAULT_IMAGE_URL },
-    ];
-    const dummy = [
-        {
-            id: 1,
-            name: 'Ahmad Ali',
-            ic: '900101-14-5678',
-            address: 'Alamat A',
-            will: '',
-            income: 33.0,
-            expense: 0.0,
-            funeral: 0.0,
-            status: 'alive',
-            image: DEFAULT_IMAGE_URL,
-            receipt: null,
+  const volunteers = [
+    { id: 201, name: 'Ketua Sukarelawan - Siti', role: 'Ketua', image: DEFAULT_IMAGE_URL },
+    { id: 202, name: 'Anggota - Ahmad', role: 'Anggota', image: DEFAULT_IMAGE_URL },
+  ];
+  const dummy = [
+    {
+      id: 1,
+      name: 'Ahmad Ali',
+      ic: '900101-14-5678',
+      address: 'Alamat A',
+      will: '',
+      income: 33.0,
+      expense: 0.0,
+      funeral: 0.0,
+      status: 'alive',
+      image: DEFAULT_IMAGE_URL,
+      receipt: null,
+    },
+    {
+      id: 2,
+      name: 'Siti Aminah',
+      ic: '920202-10-1234',
+      address: 'Alamat B',
+      will: '',
+      income: 33.0,
+      expense: 0.0,
+      funeral: 0.0,
+      status: 'alive',
+      image: DEFAULT_IMAGE_URL,
+      receipt: null,
+    },
+  ];
+
+  // Load saved data
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const ps = await loadData(STORAGE_KEY);
+        const mf = await loadData(MAINT_KEY);
+        const org = await loadData(ORG_KEY);
+        setParticipants(ps && Array.isArray(ps) ? ps : dummy);
+        setMaintenance(typeof mf === 'number' ? mf : 0);
+        setOrganizer(org || { name: '', youtube: '', image: '' });
+      } catch (error) {
+        console.error('Ralat memuat data awal:', error);
+        Alert.alert('Ralat', 'Gagal memuat data aplikasi. Sila cuba lagi.');
+      } finally {
+        setIsLoading(false); // Sembunyikan indicator setelah data dimuat atau gagal
+      }
+    };
+
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      saveData(STORAGE_KEY, participants);
+    }
+  }, [participants, isLoading]);
+
+  useEffect(() => {
+    saveData(MAINT_KEY, maintenance);
+  }, [maintenance]);
+
+  useEffect(() => {
+    saveData(ORG_KEY, organizer);
+  }, [organizer]);
+
+  // Stats
+  const totalParticipants = participants.length;
+  const totalIncome = participants.reduce((s, p) => s + Number(p.income || 0), 0);
+  const totalExpense = participants.reduce((s, p) => s + Number(p.expense || 0) + Number(p.funeral || 0), 0);
+  const balance = totalIncome - totalExpense - Number(maintenance || 0);
+
+  // Handlers
+  const handleSaveParticipant = useCallback(
+    async (payload) => {
+      payload.income = Number(payload.income || 0);
+      payload.expense = Number(payload.expense || 0);
+      payload.funeral = Number(payload.funeral || 0);
+      setParticipants((prev) => {
+        const exists = prev.some((x) => x.id === payload.id);
+        if (exists) return prev.map((x) => (x.id === payload.id ? { ...x, ...payload } : x));
+        return [...prev, payload];
+      });
+    },
+    []
+  );
+
+  const handleDelete = useCallback((id) => {
+    Alert.alert('Pengesahan', 'Padam ahli ini?', [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Padam',
+        style: 'destructive',
+        onPress: () => {
+          setParticipants((prev) => prev.filter((p) => p.id !== id));
         },
-        {
-            id: 2,
-            name: 'Siti Aminah',
-            ic: '920202-10-1234',
-            address: 'Alamat B',
-            will: '',
-            income: 33.0,
-            expense: 0.0,
-            funeral: 0.0,
-            status: 'alive',
-            image: DEFAULT_IMAGE_URL,
-            receipt: null,
+      },
+    ]);
+  }, []);
+
+  const handleMarkDead = useCallback((deceased) => {
+    if (deceased.status === 'dead') {
+      Alert.alert('Nota', 'Ahli ini sudah ditandakan meninggal.');
+      return;
+    }
+    Alert.alert('Pengesahan', `Tandakan ${deceased.name} sebagai meninggal? Ini akan mengenakan caj RM1 kepada setiap ahli hidup yang lain.`, [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'OK',
+        onPress: () => {
+          setParticipants((prev) => {
+            const aliveOthers = prev.filter((p) => p.id !== deceased.id && p.status !== 'dead');
+            const payers = aliveOthers.length;
+            const updatedOthers = prev.map((p) => {
+              if (p.id !== deceased.id && p.status !== 'dead') return { ...p, expense: Number(p.expense || 0) + 1 };
+              return p;
+            });
+            const deceasedShare = (payers * 1) * 0.75;
+            const updated = updatedOthers.map((p) => {
+              if (p.id === deceased.id) return { ...p, income: Number(p.income || 0) + deceasedShare, status: 'dead' };
+              return p;
+            });
+            setMaintenance((m) => Number(m || 0) + (payers * 1 * 0.25));
+            return updated;
+          });
         },
+      },
+    ]);
+  }, []);
+
+  const resetDummy = useCallback(async () => {
+    Alert.alert('Tetapkan Semula', 'Gantikan dengan data dummy?', [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'OK',
+        onPress: async () => {
+          setParticipants(dummy);
+          setMaintenance(0);
+          await saveData(STORAGE_KEY, dummy);
+          await saveData(MAINT_KEY, 0);
+        },
+      },
+    ]);
+  }, [dummy]);
+
+  const clearAll = useCallback(async () => {
+    Alert.alert('Padam Semua', 'Padam semua data (tindakan ini tidak boleh dibatalkan)?', [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Padam',
+        style: 'destructive',
+        onPress: async () => {
+          setParticipants([]);
+          setMaintenance(0);
+          await AsyncStorage.removeItem(STORAGE_KEY);
+          await AsyncStorage.removeItem(MAINT_KEY);
+        },
+      },
+    ]);
+  }, []);
+
+  const handleUploadReceipt = useCallback(
+    (participantId, receiptUrl) => {
+      setParticipants((prev) => prev.map((p) => (p.id === participantId ? { ...p, receipt: receiptUrl } : p)));
+    },
+    []
+  );
+
+  // Filter search
+  const filteredParticipants = participants.filter((p) => (p.name || '').toLowerCase().includes(search.toLowerCase()) || (p.ic || '').includes(search));
+
+  // Export / Import
+  const handleExportPDF = async () => {
+    const html = `
+        <html>
+        <head>
+            <style>
+                body { fontFamily: 'Helvetica'; fontSize: 12px; color: #333; }
+                h1 { fontSize: 24px; fontWeight: bold; color: #333; textAlign: center; }
+                p { margin: 5px 0; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; font-weight: bold; }
+            </style>
+        </head>
+        <body>
+            <h1>eKEMATIAN - Laporan Audit</h1>
+            <p>Tarikh: ${new Date().toLocaleDateString()}</p>
+            <p>Jumlah Peserta: ${totalParticipants}</p>
+            <p>Jumlah Masuk: ${fmt(totalIncome)}</p>
+            <p>Jumlah Keluar: ${fmt(totalExpense)}</p>
+            <p>Dana Penyelenggaraan: ${fmt(maintenance)}</p>
+            <p>Baki: ${fmt(balance)}</p>
+            <h2>Senarai Peserta</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nama</th>
+                        <th>No. IC</th>
+                        <th>Status</th>
+                        <th>Masuk (RM)</th>
+                        <th>Keluar (RM)</th>
+                        <th>Jenazah (RM)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredParticipants
+                      .map(
+                        (p) => `
+                        <tr>
+                            <td>${p.name}</td>
+                            <td>${p.ic || ''}</td>
+                            <td>${p.status}</td>
+                            <td>${fmt(p.income || 0)}</td>
+                            <td>${fmt(p.expense || 0)}</td>
+                            <td>${fmt(p.funeral || 0)}</td>
+                        </tr>`
+                      )
+                      .join('')}
+                </tbody>
+            </table>
+        </body>
+        </html>
+    `;
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Kongsi Laporan PDF' });
+    } catch (error) {
+      console.error('Ralat mengeksport PDF:', error);
+      Alert.alert('Ralat', 'Gagal mengeksport PDF: ' + String(error));
+    }
+  };
+
+  const handleExportCSV = async () => {
+    const csvRows = [
+      ['Nama', 'No. IC', 'Alamat', 'Status', 'Masuk', 'Keluar', 'Jenazah', 'Wasiat', 'Resit'],
+      ...filteredParticipants.map((p) => [
+        p.name,
+        p.ic || '',
+        p.address || '',
+        p.status || 'alive',
+        p.income || 0,
+        p.expense || 0,
+        p.funeral || 0,
+        p.will || '',
+        p.receipt || '',
+      ]),
     ];
+    const csvString = csvRows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
 
-    // Load saved data
-    useEffect(() => {
-        const loadInitialData = async () => {
-            try {
-                const ps = await loadData(STORAGE_KEY);
-                const mf = await loadData(MAINT_KEY);
-                const org = await loadData(ORG_KEY);
-                setParticipants(ps && Array.isArray(ps) ? ps : dummy);
-                setMaintenance(typeof mf === 'number' ? mf : 0);
-                setOrganizer(org || { name: '', youtube: '', image: '' });
-            } catch (error) {
-                console.error('Ralat memuat data awal:', error);
-                Alert.alert('Ralat', 'Gagal memuat data aplikasi. Sila cuba lagi.');
-            } finally {
-                setIsLoading(false); // Sembunyikan indicator setelah data dimuat atau gagal
-            }
-        };
+    try {
+      const filename = `eKematian_Laporan_${new Date().toLocaleDateString()}.csv`;
+      const uri = FileSystem.cacheDirectory + filename;
+      await FileSystem.writeAsStringAsync(uri, csvString, { encoding: FileSystem.EncodingType.UTF8 });
+      await Sharing.shareAsync(uri, { mimeType: 'text/csv', dialogTitle: 'Kongsi Laporan CSV' });
+    } catch (error) {
+      console.error('Ralat mengeksport CSV:', error);
+      Alert.alert('Ralat', 'Gagal mengeksport CSV: ' + String(error));
+    }
+  };
 
-        loadInitialData();
-    }, []);
+  const handleUploadJSON = async () => {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
+      if (res.type === 'success') {
+        const content = await FileSystem.readAsStringAsync(res.uri, { encoding: FileSystem.EncodingType.UTF8 });
+        const parsedData = JSON.parse(content);
 
-    useEffect(() => {
-        if (!isLoading) {
-            saveData(STORAGE_KEY, participants);
+        if (!Array.isArray(parsedData)) {
+          Alert.alert('Ralat', 'Fail JSON mesti mengandungi array peserta.');
+          return;
         }
-    }, [participants, isLoading]);
 
-    useEffect(() => {
-        saveData(MAINT_KEY, maintenance);
-    }, [maintenance]);
+        const normalizedParticipants = parsedData.map((p, index) => ({
+          id: p.id || Date.now() + index,
+          name: p.name || 'Tiada Nama',
+          ic: p.ic || '',
+          address: p.address || '',
+          will: p.will || '',
+          income: Number(p.income) || 0,
+          expense: Number(p.expense) || 0,
+          funeral: Number(p.funeral) || 0,
+          status: p.status || 'alive',
+          image: p.image || DEFAULT_IMAGE_URL,
+          receipt: p.receipt || null,
+        }));
 
-    useEffect(() => {
-        saveData(ORG_KEY, organizer);
-    }, [organizer]);
+        Alert.alert('Import JSON', `Gantikan data peserta sekarang dengan ${normalizedParticipants.length} rekod baharu?`, [
+          { text: 'Batal', style: 'cancel' },
+          {
+            text: 'Gantikan',
+            onPress: async () => {
+              setParticipants(normalizedParticipants);
+              await saveData(STORAGE_KEY, normalizedParticipants);
+              Alert.alert('Berjaya', 'Data JSON berjaya diimport.');
+            },
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Ralat mengimport JSON:', error);
+      Alert.alert('Ralat', 'Gagal mengimport JSON: ' + String(error));
+    }
+  };
 
-    // Stats
-    const totalParticipants = participants.length;
-    const totalIncome = participants.reduce((s, p) => s + Number(p.income || 0), 0);
-    const totalExpense = participants.reduce((s, p) => s + Number(p.expense || 0) + Number(p.funeral || 0), 0);
-    const balance = totalIncome - totalExpense - Number(maintenance || 0);
+  // Organizer Modal
+  const handleSaveOrganizer = (payload) => {
+    setOrganizer(payload);
+    setModalOrganizerVisible(false);
+  };
 
-    // Handlers
-    const handleSaveParticipant = useCallback(
-        async (payload) => {
-            payload.income = Number(payload.income || 0);
-            payload.expense = Number(payload.expense || 0);
-            payload.funeral = Number(payload.funeral || 0);
-            setParticipants((prev) => {
-                const exists = prev.some((x) => x.id === payload.id);
-                if (exists) return prev.map((x) => (x.id === payload.id ? { ...x, ...payload } : x));
-                return [...pre
+  const renderEmptyList = () => (
+    <View style={styles.emptyListContainer}>
+      <Text style={styles.emptyListText}>Tiada peserta dijumpai.</Text>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Image source={{ uri: 'https://via.placeholder.com/150' }} style={styles.logo} />
+        <Text style={styles.title}>eKEMATIAN - Pertubuhan Kebajikan</Text>
+      </View>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>Memuat data, sila tunggu...</Text>
+        </View>
+      ) : (
+        <ScrollView>
+          {/* Statistik */}
+          <View style={styles.statsContainer}>
+            <Text style={styles.statsText}>Jumlah Ahli: {totalParticipants}</Text>
+            <Text style={styles.statsText}>Jumlah Masuk: {fmt(totalIncome)}</Text>
+            <Text style={styles.statsText}>Jumlah Keluar: {fmt(totalExpense)}</Text>
+            <Text style={styles.statsText}>Dana Penyelenggaraan: {fmt(maintenance)}</Text>
+            <Text style={styles.statsTextBold}>Baki: {fmt(balance)}</Text>
+          </View>
+          {/* Carian */}
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Cari nama atau No. IC..."
+            value={search}
+            onChangeText={setSearch}
+            placeholderTextColor="#757575"
+          />
+          {/* Butang */}
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity style={styles.addButton} onPress={() => { setEditData(null); setModalVisible(true); }}>
+              <Text style={styles.buttonText}>Tambah Ahli</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.exportPdfButton} onPress={handleExportPDF}>
+              <Text style={styles.buttonText}>Eksport PDF</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.exportCsvButton} onPress={handleExportCSV}>
+              <Text style={styles.buttonText}>Eksport CSV</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.importJsonButton} onPress={handleUploadJSON}>
+              <Text style={styles.buttonText}>Import JSON</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.resetButton} onPress={resetDummy}>
+              <Text style={styles.buttonText}>Tetapkan Semula Data Demo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.clearButton} onPress={clearAll}>
+              <Text style={styles.buttonText}>Padam Semua Data</Text>
+            </TouchableOpacity>
+          </View>
+          {/* Organizer */}
+          <TouchableOpacity style={styles.organizerButton} onPress={() => setModalOrganizerVisible(true)}>
+            <Text style={styles.buttonText}>Profil Penganjur</Text>
+          </TouchableOpacity>
+          {/* Senarai Peserta */}
+          <Text style={styles.sectionTitle}>Senarai Ahli</Text>
+          <FlatList
+            data={filteredParticipants}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item }) => (
+              <ClaimItem
+                participant={item}
+                onEdit={(d) => {
+                  setEditData(d);
+                  setModalVisible(true);
+                }}
+                onDelete={handleDelete}
+                onMarkDead={handleMarkDead}
+                onUploadReceipt={(participant) => {
+                  setSelectedParticipant(participant);
+                  setUploadReceiptModalVisible(true);
+                }}
+              />
+            )}
+            ListEmptyComponent={renderEmptyList}
+          />
+          {/* Senarai Sukarelawan */}
+          <Text style={styles.sectionTitle}>Senarai Sukarelawan</Text>
+          <FlatList
+            data={volunteers}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item }) => <VolunteerItem volunteer={item} />}
+            ListEmptyComponent={<Text style={styles.emptyListText}>Tiada sukarelawan.</Text>}
+          />
+        </
+        ListHeaderComponent={
+            
+                Tambah Ahli
+                Eksport PDF
+                Eksport CSV
+                Import JSON
+                Tetapkan Semula Data Demo
+                Padam Semua Data
+            
+            
+        }
+        
+            Senarai Ahli
+        
+        
+            Senarai Sukarelawan
+        
+    }
+    
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSave={handleSaveParticipant}
+        editData={editData}
+    />
+    
+        visible={modalOrganizerVisible}
+        organizer={organizer}
+        onSave={handleSaveOrganizer}
+        onClose={() => setModalOrganizerVisible(false)}
+    />
+    
+        visible={uploadReceiptModalVisible}
+        onClose={() => setUploadReceiptModalVisible(false)}
+        onUpload={handleUploadReceipt}
+        participant={selectedParticipant}
+    />
+  
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  header: {
+    backgroundColor: '#4CAF50',
+    padding: 20,
+    alignItems: 'center',
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginTop: 10,
+  },
+  statsContainer: {
+    backgroundColor: '#FFF',
+    padding: 15,
+    margin: 10,
+    borderRadius: 5,
+    elevation: 2,
+  },
+  statsText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 5,
+  },
+  statsTextBold: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  searchInput: {
+    backgroundColor: '#FFF',
+    padding: 10,
+    margin: 10,
+    borderRadius: 5,
+    elevation: 2,
+    color: '#333',
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    marginHorizontal: 10,
+    marginBottom: 10,
+  },
+  addButton: {
+    backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 5,
+    elevation: 2,
+    marginBottom: 10,
+    minWidth: '45%',
+    alignItems: 'center',
+  },
+  exportPdfButton: {
+    backgroundColor: '#2196F3',
+    padding: 10,
+    borderRadius: 5,
+    elevation: 2,
+    marginBottom: 10,
+    minWidth: '45%',
+    alignItems: 'center',
+  },
+    exportCsvButton: {
+    backgroundColor: '#FF9800',
+    padding: 10,
+    borderRadius: 5,
+    elevation: 2,
+    marginBottom: 10,
+    minWidth: '45%',
+    alignItems: 'center',
+  },
+  importJsonButton: {
+    backgroundColor: '#9C27B0',
+    padding: 10,
+    borderRadius: 5,
+    elevation: 2,
+    marginBottom: 10,
+    minWidth: '45%',
+    alignItems: 'center',
+  },
+  resetButton: {
+    backgroundColor: '#607D8B',
+    padding: 10,
+    borderRadius: 5,
+    elevation: 2,
+    marginBottom: 10,
+    minWidth: '45%',
+    alignItems: 'center',
+  },
+  clearButton: {
+    backgroundColor: '#F44336',
+    padding: 10,
+    borderRadius: 5,
+    elevation: 2,
+    marginBottom: 10,
+    minWidth: '45%',
+    alignItems: 'center',
+  },
+  organizerButton: {
+    backgroundColor: '#795548',
+    padding: 10,
+    borderRadius: 5,
+    elevation: 2,
+    margin: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  listItem: {
+    backgroundColor: '#FFF',
+    padding: 15,
+    marginHorizontal: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+    elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  ic: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 5,
+  },
+  address: {
+    fontSize: 14,
+    color: '#555',
+  },
+  financeInfo: {
+    fontSize: 14,
+    color: '#777',
+  },
+    receiptLink: {
+    fontSize: 14,
+    color: '#2196F3',
+    marginTop: 5,
+  },
+  editButton: {
+    backgroundColor: '#2196F3',
+    padding: 8,
+    borderRadius: 5,
+    marginBottom: 5,
+    alignItems: 'center',
+  },
+  deleteButton: {
+    backgroundColor: '#F44336',
+    padding: 8,
+    borderRadius: 5,
+    marginBottom: 5,
+    alignItems: 'center',
+  },
+  markDeadButton: {
+    backgroundColor: '#607D8B',
+    padding: 8,
+    borderRadius: 5,
+    marginBottom: 5,
+    alignItems: 'center',
+  },
+    uploadReceiptButton: {
+    backgroundColor: '#795548',
+    padding: 8,
+    borderRadius: 5,
+    marginBottom: 5,
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    margin: 10,
+  },
+  modalContainer: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#FFF',
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  label: {
+    fontSize: 16,
+    color: '#333',
+    marginTop: 10,
+  },
+  input: {
+    backgroundColor: '#F0F0F0',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 5,
+    color: '#333',
+  },
+  modalButtonsContainer: {
+    marginTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  saveButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    minWidth: '40%',
+  },
+  cancelButton: {
+    backgroundColor: '#9E9E9E',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    minWidth: '40%',
+  },
+  loadingIndicator: {
+    marginTop: 10,
+  },
+    receiptImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 5,
+    marginBottom: 10,
+    alignSelf: 'center',
+  },
+  selectFileButton: {
+    backgroundColor: '#795548',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  uploadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  uploadProgressText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 10,
+  },
+  cancelUploadButton: {
+    backgroundColor: '#F44336',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  emptyListContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyListText: {
+    fontSize: 16,
+    color: '#757575',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    marginTop: 10,
+    color: '#4CAF50',
+  },
+});
